@@ -72,7 +72,7 @@
     <script type="text/javascript">
     $(function() {
         var device_name;
-        while( !(device_name = prompt('請輸入裝置名稱', 'My-Phone')) )
+        while( !(device_name = prompt('請輸入裝置名稱', Math.floor(Math.random() * 1000) + '.SmartPhone')) )
             ;
         var interval = 500;
         var accur = 10;
