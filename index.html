@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smartphone</title>
+    <link rel="stylesheet" type="text/css" href="./css/gsensor.css">
+    <script src="https://iottalk.github.io/iottalk-js/jquery.js"></script>
+    <script src="dan2.js"></script>
+</head>
+<body>
+
+    <main>
+        <h2 id="uuid"></h2>
+
+        <section> <h6>Acceleration</h6>  </section>
+        <section id="Ax">
+            <label><i>x</i></label>
+            <span></span>
+        </section>
+        <section id="Ay">
+            <label><i>y</i></label>
+            <span></span>
+        </section>
+        <section id="Az">
+            <label><i>z</i></label>
+            <span></span>
+        </section>
+
+        <section><span>&nbsp;</span></section>
+
+        <section> <h6>Gyroscope</h6> </section>
+        <section id="Rx">
+            <label><i>&alpha;</i></label>
+            <span></span></section>
+        <section id="Ry">
+            <label><i>&beta;</i></label>
+            <span></span></section>
+        <section id="Rz">
+            <label><i>&gamma;</i></label>
+            <span></span></section>
+
+        <section><span>&nbsp;</span></section>
+
+        <section> <h6>Orientation</h6> </section>
+        <section id="Ox">
+            <label><i>&alpha;</i></label>
+            <span></span></section>
+        <section id="Oy">
+            <label><i>&beta;</i></label>
+            <span></span></section>
+        <section id="Oz">
+            <label><i>&gamma;</i></label>
+            <span></span></section>
+
+        <section><span>&nbsp;</span></section>
+
+        <section><h6>Compass</h6></section>
+        <section>
+            <div class="compass">
+                <div class="arrow" id="compassDiscImg"></div>
+                <div class="disc"></div>
+            </div>
+            <div class="orientation-data">
+                <div><span id = "direction"></span></div>
+            </div>
+        </section>
+
+    </main>
+
+
+    <script type="text/javascript">
+    $(function() {
+        var device_name;
+        while( !(device_name = prompt('請輸入裝置名稱', 'My-Phone')) )
+            ;
+        var interval = 500;
+        var accur = 10;
+        var acc  = {x:0,y:0,z:0};
+        var gyro = {x:0,y:0,z:0};
+        var orient = {x:0,y:0,z:0,oc:0};
+        var AxDom = $('#Ax > span');
+        var AyDom = $('#Ay > span');
+        var AzDom = $('#Az > span');
+        var RxDom = $('#Rx > span');
+        var RyDom = $('#Ry > span');
+        var RzDom = $('#Rz > span');
+        var OxDom = $('#Ox > span');
+        var OyDom = $('#Oy > span');
+        var OzDom = $('#Oz > span');
+
+        window.ondevicemotion = function(event) {
+            var ax = event.accelerationIncludingGravity.x || 0;
+            var ay = event.accelerationIncludingGravity.y || 0;
+            var az = event.accelerationIncludingGravity.z || 0;
+            acc.x = Math.round(ax*accur) / accur;
+            acc.y = Math.round(ay*accur) / accur;
+            acc.z = Math.round(az*accur) / accur;
+            
+            var ra = event.rotationRate.alpha;  
+            var rb = event.rotationRate.beta;
+            var rg = event.rotationRate.gamma;
+            gyro.x = Math.round(rg*accur) / accur;
+            gyro.y = Math.round(ra*accur) / accur;
+            gyro.z = Math.round(rb*accur) / accur;
+        }
+
+        window.ondeviceorientation = function(event) {
+            var compassdisc = document.getElementById("compassDiscImg");
+            
+            if(event.webkitCompassHeading)
+                orient.oc = Math.ceil(event.webkitCompassHeading) || 0;  // oc: orientation compass
+            else
+                orient.oc =  (Math.round((event.alpha||0)*accur) / accur);
+			
+            orient.x = (Math.round((event.alpha||0)*accur) / accur);
+            orient.y = (Math.round((event.beta  ||0)*accur) / accur);
+            orient.z = (Math.round((event.gamma||0)*accur) / accur);
+            compassdisc.style.webkittransform = "rotate("+ (360-orient.oc) +"deg)";
+            compassdisc.style.moztransform = "rotate("+ (360-orient.oc) +"deg)";
+            compassdisc.style.transform = "rotate("+ (360-orient.oc) +"deg)";
+        }
+
+        function domUpdater() {
+            AxDom.text(acc.x);
+            AyDom.text(acc.y);
+            AzDom.text(acc.z);
+
+            RxDom.text(gyro.x);
+            RyDom.text(gyro.y);
+            RzDom.text(gyro.z);
+
+            OxDom.text(orient.x);
+            OyDom.text(orient.y);
+            OzDom.text(orient.z);
+
+            requestAnimationFrame(domUpdater);
+        }
+        requestAnimationFrame(domUpdater);
+
+        function iotUpdater() {
+            dan2.push('Acceleration', [acc.x, acc.y, acc.z]);
+            dan2.push('Gyroscope', [gyro.x, gyro.y, gyro.z]);
+            dan2.push('Orientation', [orient.x, orient.y, orient.z, orient.oc]);
+        }
+
+        // Register
+        function on_signal(cmd, param) {
+            console.info('[cmd]', cmd, param);
+            return true;
+        }
+        function on_data(idf_name, data) {
+            if(idf_name == 'Vibration') {
+                console.log(data[0]);
+                if(data[0] > 0)               
+                    navigator.vibrate(data[0] * 100);
+            }
+        }
+        function init_callback(result) {
+            console.info('register:', result);
+            $('#uuid').text(result ? 'Connected' : 'GG');
+            if(result){
+                setInterval(iotUpdater, interval);
+            }
+        }
+        dan2.register('http://140.113.199.198:9992', {
+            'mqtt_host': '140.113.199.198',
+            'mqtt_port': 1884,
+            'name': device_name,
+            'on_signal': on_signal,
+            'on_data': on_data,
+            'idf_list': [
+                ['Acceleration', ['g', 'g', 'g']],
+                ['Gyroscope', ['g', 'g', 'g']],
+                ['Orientation', ['g', 'g', 'g']],
+            ],
+            'odf_list': [
+                ['Vibration', ['g']],
+            ],
+            'profile': {
+                'model': 'Smartphone',
+            },
+            'accept_protos': ['mqtt'],
+        }, init_callback);
+    });
+    </script>
+
+</body>
+</html>
