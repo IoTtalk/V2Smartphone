@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Smartphone</title>
-    <link rel="stylesheet" type="text/css" href="./css/gsensor.css">
+    <link rel="stylesheet" type="text/css" href="./css/v1.css">
     <script src="https://iottalk.github.io/iottalk-js/jquery.js"></script>
     <script src="dan2.js"></script>
 </head>
@@ -158,7 +158,7 @@
         }
         function init_callback(result) {
             console.info('register:', result);
-            $('#uuid').text(result ? 'Connected' : 'GG');
+            $('#uuid').text(result ? 'Connected: ' + device_name : 'Register GG');
             if(result){
                 setInterval(iotUpdater, interval);
             }
